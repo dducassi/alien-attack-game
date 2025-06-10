@@ -5,3 +5,5 @@ My first graphical Python game, similar to Space Invaders
 - Aliens shoot back based on a random trigger
 - Each time the player clears the wave, a new fleet appears, the speed is increased and the points per alien shot increases
 - Includes game stats, including a score counter and saves high scores to a txt file
+- Includes a starfield generator to draw an endless scrolling starfield as the background
+- Based largely on the "Alien Invasion" project from theh book "Python Crash Course" by Eric Matthes
