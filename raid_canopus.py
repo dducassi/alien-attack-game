@@ -25,6 +25,7 @@ from game_stats import GameStats
 from scoreboard import Scoreboard
 from button import Button
 from star import Star
+from ai_controller import AIController 
 
 class RaidCanopus:
     """Overall class to manage game assets and behavior."""
@@ -57,7 +58,11 @@ class RaidCanopus:
         self.game_active = False
         
         # Make the Play button.
-        self.play_button = Button(self, "Play")
+        self.play_button = Button(self, "Play", offset_y = -40)
+        self.play_ai_button = Button(self, "Play (AI)", offset_y = 40)
+
+        self.ai_mode = True 
+        self.ai = AIController(self) 
         
 
     def run_game(self):
@@ -69,6 +74,10 @@ class RaidCanopus:
             self._update_stars()
             
             if self.game_active:
+                if self.ai_mode:
+                    action = self.ai.get_action()
+                    self._execute_ai_action(action)
+
                 self.ship.update()
                 self._update_bullets()
                 self._update_alien_bullets()
@@ -76,6 +85,31 @@ class RaidCanopus:
 
             self._update_screen()
             self.clock.tick(60)
+    
+    def _execute_ai_action(self, action):
+        if action == "left":
+            self.ship.moving_left = True
+            self.ship.moving_right = False
+        elif action == "right":
+            self.ship.moving_right = True
+            self.ship.moving_left = False
+        else:
+            self.ship.moving_left = False
+            self.ship.moving_right = False
+
+        if action == "up":
+            self.ship.moving_up = True
+            self.ship.moving_down = False
+        elif action == "down":
+            self.ship.moving_down = True
+            self.ship.moving_up = False
+        else:
+            self.ship.moving_up = False
+            self.ship.moving_down = False
+
+        if action == "fire":
+            self._fire_bullet()
+
 
     def _create_star(self, x_position, y_position):
         """Place one star in the grid"""
@@ -138,6 +172,7 @@ class RaidCanopus:
             elif event.type == pygame.MOUSEBUTTONDOWN:
                 mouse_pos = pygame.mouse.get_pos()
                 self._check_play_button(mouse_pos)
+                self._check_play_ai_button(mouse_pos)
 
     def _check_play_button(self, mouse_pos):
         """Start new game when player clicks button"""
@@ -149,6 +184,7 @@ class RaidCanopus:
             self.sb.prep_score()
             self.sb.prep_level()
             self.sb.prep_ships()
+            self.ai_mode = False
             self.game_active = True
 
             # Clear bullets and aliens
@@ -162,6 +198,11 @@ class RaidCanopus:
 
             # Hide the mouse cursor.
             pygame.mouse.set_visible(False)
+
+    def _check_play_ai_button(self, mouse_pos):
+        if self.play_ai_button.rect.collidepoint(mouse_pos) and not self.game_active:
+            self.ai_mode = True
+            self.game_active = True
                 
     
     def _check_keydown_events(self, event):
@@ -363,6 +404,7 @@ class RaidCanopus:
         # Draw the play button if the game is inactive.
         if not self.game_active:
             self.play_button.draw_button()
+            self.play_ai_button.draw_button()
             
         ## Make the most recently drawn screen visible.
         pygame.display.flip()
