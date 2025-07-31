@@ -13,10 +13,10 @@ class AIController:
             return "idle"
 
         # Track the closest alien
-        closest_alien = min(
+        closest_alien = sorted(
             self.aliens.sprites(),
-            key=lambda alien: abs(alien.rect.centerx - self.ship.rect.centerx)
-        )
+            key=lambda alien: (-alien.rect.bottom, abs(alien.rect.centerx - self.ship.rect.centerx))
+        )[0]
 
         alien_x = closest_alien.rect.centerx
         alien_y = closest_alien.rect.centery
@@ -33,14 +33,34 @@ class AIController:
         travel_time = abs((alien_y - ship_y) / bullet_speed)
 
         # Predict where alien will be when bullet gets there
-        lead_x = alien_x + alien_speed_x * travel_time
+        lead_x = alien_x + alien_speed_x * travel_time 
         dx_lead = lead_x - ship_x
 
-        if abs(dy) > 400:
+        # 1. Find dangerous alien bullets
+        danger_zone_width = self.ship.rect.width * 1.1
+        danger_zone_height = 150  # how far above the ship we start dodging
+
+        dangerous_bullets = [
+            b for b in self.game.alien_bullets.sprites()
+            if (
+                self.ship.rect.top - danger_zone_height < b.rect.centery < self.ship.rect.bottom and
+                abs(b.rect.centerx - self.ship.rect.centerx) < danger_zone_width
+            )
+        ]
+
+        if dangerous_bullets:
+            # 2. Choose a dodge direction
+            bullet = dangerous_bullets[0]  # Just dodge the first for now
+            if bullet.rect.centerx >= self.ship.rect.centerx:
+                return "left"  # Bullet is to the right, dodge left
+            else:
+                return "right"  # Bullet is to the left, dodge right
+
+        if abs(dy) > 300:
             return "up"
-        elif dy > - 300 and self.ship.rect.bottom < 600:
+        elif dy > - 250 and self.ship.rect.bottom < 600:
             return "down"
-        elif abs(dx_lead) > 180:
+        elif abs(dx_lead) > (abs(alien_speed_x) * travel_time) * 2:
             return "right" if dx> 0 else "left"
         else:
             now = pygame.time.get_ticks()
