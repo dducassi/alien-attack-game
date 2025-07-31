@@ -85,6 +85,28 @@ class RaidCanopus:
 
             self._update_screen()
             self.clock.tick(60)
+
+    def reset(self, ai_mode=False):
+    # Reset the game statistics and settings
+        self.settings.initialize_dynamic_settings()
+        self.stats.reset_stats()
+        self.sb.prep_score()
+        self.sb.prep_level()
+        self.sb.prep_ships()
+        self.ai_mode = ai_mode
+        self.game_active = True
+
+        # Clear bullets and aliens
+        self.bullets.empty()
+        self.alien_bullets.empty()
+        self.aliens.empty()
+
+        # Create a new fleet and center the ship
+        self._create_fleet()
+        self.ship.center_ship()
+
+        # Hide the mouse cursor.
+        pygame.mouse.set_visible(False)
     
     def _execute_ai_action(self, action):
         if action == "left":
@@ -175,52 +197,12 @@ class RaidCanopus:
                 self._check_play_ai_button(mouse_pos)
 
     def _check_play_button(self, mouse_pos):
-        """Start new game when player clicks button"""
-        button_clicked = self.play_button.rect.collidepoint(mouse_pos)
-        if button_clicked and not self.game_active:
-            # Reset the game statistics and settings
-            self.settings.initialize_dynamic_settings()
-            self.stats.reset_stats()
-            self.sb.prep_score()
-            self.sb.prep_level()
-            self.sb.prep_ships()
-            self.ai_mode = False
-            self.game_active = True
-
-            # Clear bullets and aliens
-            self.bullets.empty()
-            self.alien_bullets.empty()
-            self.aliens.empty()
-
-            # Create a new fleet and center the ship
-            self._create_fleet()
-            self.ship.center_ship()
-
-            # Hide the mouse cursor.
-            pygame.mouse.set_visible(False)
+        if self.play_button.rect.collidepoint(mouse_pos) and not self.game_active:
+            self.reset(ai_mode=False)
 
     def _check_play_ai_button(self, mouse_pos):
         if self.play_ai_button.rect.collidepoint(mouse_pos) and not self.game_active:
-            # Reset the game statistics and settings
-            self.settings.initialize_dynamic_settings()
-            self.stats.reset_stats()
-            self.sb.prep_score()
-            self.sb.prep_level()
-            self.sb.prep_ships()
-            self.ai_mode = True
-            self.game_active = True
-
-            # Clear bullets and aliens
-            self.bullets.empty()
-            self.alien_bullets.empty()
-            self.aliens.empty()
-
-            # Create a new fleet and center the ship
-            self._create_fleet()
-            self.ship.center_ship()
-
-            # Hide the mouse cursor.
-            pygame.mouse.set_visible(False)
+            self.reset(ai_mode=True)
                 
     
     def _check_keydown_events(self, event):
