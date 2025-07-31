@@ -61,7 +61,7 @@ class RaidCanopus:
         self.play_button = Button(self, "Play", offset_y = -40)
         self.play_ai_button = Button(self, "Play (AI)", offset_y = 40)
 
-        self.ai_mode = True 
+        self.ai_mode = False 
         self.ai = AIController(self) 
         
 
@@ -158,14 +158,14 @@ class RaidCanopus:
 
     def _check_events(self):
         """Respond to keypresses and mouse events."""
+        
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 self.write_high_score()
                 sys.exit()
             elif event.type == pygame.KEYDOWN:
                 # check key down events
-                self._check_keydown_events(event)
-                # Move ship to the right  
+                self._check_keydown_events(event)  
             elif event.type == pygame.KEYUP:
                 # Stop moving right when not pressed
                 self._check_keyup_events(event)
@@ -201,21 +201,44 @@ class RaidCanopus:
 
     def _check_play_ai_button(self, mouse_pos):
         if self.play_ai_button.rect.collidepoint(mouse_pos) and not self.game_active:
+            # Reset the game statistics and settings
+            self.settings.initialize_dynamic_settings()
+            self.stats.reset_stats()
+            self.sb.prep_score()
+            self.sb.prep_level()
+            self.sb.prep_ships()
             self.ai_mode = True
             self.game_active = True
+
+            # Clear bullets and aliens
+            self.bullets.empty()
+            self.alien_bullets.empty()
+            self.aliens.empty()
+
+            # Create a new fleet and center the ship
+            self._create_fleet()
+            self.ship.center_ship()
+
+            # Hide the mouse cursor.
+            pygame.mouse.set_visible(False)
                 
     
     def _check_keydown_events(self, event):
         if event.key == pygame.K_SPACE:
-            self._fire_bullet()
+            if self.ai_mode == False:
+                self._fire_bullet()
         elif event.key == pygame.K_RIGHT:
-            self.ship.moving_right = True
+            if self.ai_mode == False:
+                self.ship.moving_right = True
         elif event.key == pygame.K_LEFT:
-            self.ship.moving_left = True
+            if self.ai_mode == False:
+                self.ship.moving_left = True
         elif event.key == pygame.K_UP:
-            self.ship.moving_up = True
+            if self.ai_mode == False:
+                self.ship.moving_up = True
         elif event.key == pygame.K_DOWN:
-            self.ship.moving_down = True
+            if self.ai_mode == False:
+                self.ship.moving_down = True
         elif event.key == pygame.K_q:
             self.write_high_score()
             sys.exit()
