@@ -26,16 +26,29 @@ class AIController:
         dx = alien_x - ship_x
         dy = alien_y - ship_y
 
-        if abs(dx) > 10:
-            return "right" if dx > 0 else "left"
-        elif abs(dy) > 400:
+        bullet_speed = -self.game.settings.bullet_speed
+        alien_speed_x = self.game.settings.alien_speed * self.game.settings.fleet_direction
+
+        # Estimate time it takes bullet to reach the alien's Y level
+        travel_time = abs((alien_y - ship_y) / bullet_speed)
+
+        # Predict where alien will be when bullet gets there
+        lead_x = alien_x + alien_speed_x * travel_time
+        dx_lead = lead_x - ship_x
+
+        if abs(dy) > 400:
             return "up"
         elif dy > - 300 and self.ship.rect.bottom < 600:
             return "down"
+        elif abs(dx_lead) > 180:
+            return "right" if dx> 0 else "left"
         else:
             now = pygame.time.get_ticks()
             if now - self.last_fire_time >= self.fire_delay:
                 self.last_fire_time = now
-                return "fire"
-            else:
-                return "idle"
+                if dx > 0 and alien_speed_x < 0:
+                    return "fire"
+                elif dx < 0 and alien_speed_x > 0:
+                    return "fire"
+                else:
+                    return "idle"
