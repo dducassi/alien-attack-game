@@ -73,18 +73,18 @@ class RaidCanopusEnv:
 
 
     def _calculate_reward(self):
-        reward = -0.1  # small time penalty
+        reward = -0.5  # small time penalty
 
         current_alien_count = len(self.game.aliens)
         if current_alien_count < self.prev_alien_count:
-            reward += 100 * (self.prev_alien_count - current_alien_count)
-        if current_alien_count < 2:
-            reward = 10000
+            reward += 5000 / (self.prev_alien_count)
+            if self.prev_alien_count < 2:
+                reward = 10000
 
-        # Penalize *only* when ships_left decreases
+        # Penalize when ships_left decreases
         if hasattr(self, "prev_ships_left"):
             if self.game.stats.ships_left < self.prev_ships_left:
-                reward -= 1000
+                reward -= 3000
 
         self.prev_ships_left = self.game.stats.ships_left
         return reward
