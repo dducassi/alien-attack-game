@@ -13,7 +13,11 @@ else:
 import pygame
 from pathlib import Path
 from random import randint
-
+import torch
+import numpy as np
+from collections import deque
+from dqn_agent import DQNAgent
+from models import DQN
 
 
 from settings import Settings
@@ -25,12 +29,13 @@ from game_stats import GameStats
 from scoreboard import Scoreboard
 from button import Button
 from star import Star
-from ai_controller import AIController 
+from rcenv import RaidCanopusEnv
+
 
 class RaidCanopus:
     """Overall class to manage game assets and behavior."""
 
-    def __init__(self):
+    def __init__(self, model_path=None):
         pygame.init()
         self.clock = pygame.time.Clock()
         self.settings = Settings()
@@ -62,11 +67,26 @@ class RaidCanopus:
         self.play_ai_button = Button(self, "Play (AI)", offset_y = 40)
 
         self.ai_mode = False 
-        self.ai = AIController(self) 
+        self.env = RaidCanopusEnv(self)
+        if model_path:
+            print(f"Loading trained model from {model_path}...")
+            device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+            state_size = len(self.env._get_observation())
+            action_size = len(self.env.action_space)
+
+            self.agent = DQNAgent(state_size, action_size, device)
+            self.agent.qnetwork_local.load_state_dict(torch.load(model_path, map_location=device))
+            self.agent.qnetwork_local.eval()
+            self.ai_mode = True
+        else:
+            self.ai_mode = False
         
 
     def run_game(self):
         """Start the game's main loop."""
+        first_obs = self.env._get_observation()    
+        n_stack = 3
+        obs_deque = deque([first_obs]*n_stack, maxlen=n_stack)
         while True:
             # Check events and update.
             self._check_events()
@@ -75,8 +95,15 @@ class RaidCanopus:
             
             if self.game_active:
                 if self.ai_mode:
-                    action = self.ai.get_action()
-                    self._execute_ai_action(action)
+                    if self.ai_mode:
+                        # get new raw obs
+                        new_obs = self.env._get_observation()          # (122,)
+                        obs_deque.append(new_obs)                     # drop oldest, keep latest 3
+                        stacked = np.concatenate(obs_deque, axis=0)   # (366,)
+
+                        action = self.agent.get_action(stacked)
+                        print("Action selected:", action)
+                        self._execute_ai_action(action)
 
                 self.ship.update()
                 self._update_bullets()
@@ -109,29 +136,24 @@ class RaidCanopus:
         pygame.mouse.set_visible(False)
     
     def _execute_ai_action(self, action):
-        if action == "left":
+        action_str = self.env.action_lookup[action]
+
+        # Reset all movements
+        self.ship.moving_left = False
+        self.ship.moving_right = False
+        self.ship.moving_up = False
+        self.ship.moving_down = False
+
+        if "left" in action_str:
             self.ship.moving_left = True
-            self.ship.moving_right = False
-        elif action == "right":
+        if "right" in action_str:
             self.ship.moving_right = True
-            self.ship.moving_left = False
-        else:
-            self.ship.moving_left = False
-            self.ship.moving_right = False
-
-        if action == "up":
+        if "up" in action_str:
             self.ship.moving_up = True
-            self.ship.moving_down = False
-        elif action == "down":
+        if "down" in action_str:
             self.ship.moving_down = True
-            self.ship.moving_up = False
-        else:
-            self.ship.moving_up = False
-            self.ship.moving_down = False
-
-        if action == "fire":
+        if "fire" in action_str:
             self._fire_bullet()
-
 
     def _create_star(self, x_position, y_position):
         """Place one star in the grid"""
@@ -248,7 +270,7 @@ class RaidCanopus:
         self.fire_roll = randint(0, 121 * len(self.aliens))
         if self.fire_roll == 69:
             # Alien Fire
-            new_alien_bullet = AlienBullet(rc, alien)
+            new_alien_bullet = AlienBullet(self, alien)
             self.alien_bullets.add(new_alien_bullet)
                
 
@@ -417,6 +439,7 @@ class RaidCanopus:
 
 if __name__ == '__main__':
     # Make a game instance and run the game.
-    rc = RaidCanopus()
+    model_path = "dqn_final.pth"
+    rc = RaidCanopus(model_path=model_path)
     rc.run_game()
     
