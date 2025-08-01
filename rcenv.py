@@ -78,6 +78,8 @@ class RaidCanopusEnv:
         current_alien_count = len(self.game.aliens)
         if current_alien_count < self.prev_alien_count:
             reward += 100 * (self.prev_alien_count - current_alien_count)
+        if current_alien_count < 2:
+            reward = 10000
 
         # Penalize *only* when ships_left decreases
         if hasattr(self, "prev_ships_left"):
