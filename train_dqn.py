@@ -27,11 +27,11 @@ def train():
     if os.path.exists("epsilon.npy"):
         agent.epsilon = float(np.load("epsilon.npy"))
         print(f"[INFO] Resuming with epsilon: {agent.epsilon}")
-    
+    #agent.epsilon = 0.1
     print(f"[DEBUG] Initial epsilon: {agent.epsilon}")
 
-    episodes = 500
-    max_t = 3600
+    episodes = 2500
+    max_t = 36000
     try:
         for i_episode in range(1, episodes+1):
             obs = env.reset()                 # shape (D,)
