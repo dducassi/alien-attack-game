@@ -5,6 +5,7 @@ MAX_ALIENS = 50
 MAX_BULLETS = 10
 SCREEN_WIDTH = 800
 SCREEN_HEIGHT = 600
+MAX_SHIP_BULLETS = 7
 
 class RaidCanopusEnv:
     def __init__(self, game):
@@ -73,18 +74,18 @@ class RaidCanopusEnv:
 
 
     def _calculate_reward(self):
-        reward = -0.5  # small time penalty
+        reward = -1  # small time penalty
 
         current_alien_count = len(self.game.aliens)
         if current_alien_count < self.prev_alien_count:
-            reward += 5000 / (self.prev_alien_count)
+            reward += 10000 / (self.prev_alien_count)
             if self.prev_alien_count < 2:
                 reward = 10000
 
-        # Penalize when ships_left decreases
+        # Penalize when ships_left decreases (irrelevant if 1 ship)
         if hasattr(self, "prev_ships_left"):
             if self.game.stats.ships_left < self.prev_ships_left:
-                reward -= 3000
+                reward -= 5000
 
         self.prev_ships_left = self.game.stats.ships_left
         return reward
@@ -121,6 +122,18 @@ class RaidCanopusEnv:
             bullet_positions.append((0.0, 0.0))
         bullet_positions = bullet_positions[:MAX_BULLETS]
         for pos in bullet_positions:
+            obs.extend(pos)
+
+        # Get ship bullet positions
+        ship_bullet_positions = [
+        (bullet.rect.centerx / SCREEN_WIDTH, bullet.rect.centery / SCREEN_HEIGHT)
+        for bullet in self.game.bullets.sprites()
+        ]
+
+        while len(ship_bullet_positions) < MAX_SHIP_BULLETS:
+            ship_bullet_positions.append((0.0, 0.0))
+        ship_bullet_positions = ship_bullet_positions[:MAX_BULLETS]
+        for pos in ship_bullet_positions:
             obs.extend(pos)
 
         return np.array(obs, dtype=np.float32)
